@@ -24,14 +24,11 @@ logger = logging.getLogger('botHandler')
 def logMessage(message):
     logger.info("-------Api message start------")
     logger.info(message)
-    logger.info("-------Debug------")
-    logger.info(message.text)
+    logger.info("-------Api message end------")
 
     msgDict = message.to_dict()
     msgDict["timestamp"] = datetime.now()
     botLog.insert_one(msgDict)
-
-    logger.info("-------Api message end------")
 
 
 # Генерим юзера, либо напоминаем ему его код
@@ -197,12 +194,22 @@ def tournaments(bot, update):
         msgText+=("\n```")
         bot.send_message(chat_id=update.message.chat_id, text=msgText,  parse_mode=telegram.ParseMode.MARKDOWN)
 
+def exterminate(bot, update, args):
+    tournamentID = ' '.join(args)
+    if(tournamentID):
+        result = tournamentData.delete_one({"_id" : tournamentID})
+        if (result.deleted_count > 0) :
+            bot.send_message(chat_id=update.message.chat_id, text="Done")
+        else:
+            bot.send_message(chat_id=update.message.chat_id, text="Nothing deleted")
+
 bot = telegram.Bot(token=botApiToken)
 print(bot.get_me())
 
 updater = Updater(token=botApiToken)
 dispatcher = updater.dispatcher
 
+#handlers
 start_handler = CommandHandler('start', start)
 dispatcher.add_handler(start_handler)
 
@@ -218,11 +225,15 @@ dispatcher.add_handler(help_handler)
 stds_handler = CommandHandler('standings', stds, pass_args=True)
 dispatcher.add_handler(stds_handler)
 
+exrerminate_handler = CommandHandler('exterminate', exterminate, pass_args=True)
+dispatcher.add_handler(exrerminate_handler)
+
 tournaments_handler = CommandHandler('tournaments', tournaments)
 dispatcher.add_handler(tournaments_handler)
 
 unknown_handler = MessageHandler(Filters.command, unknown)
 dispatcher.add_handler(unknown_handler)
+#end handlers
 
 updater.start_polling()
 
